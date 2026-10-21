@@ -2,4 +2,5 @@ pytest==9.1.1
 allure-pytest==2.16.0
 allure-python-commons
 selenium==4.47.0
-python-dotenv
+httpx==0.27.2
+python-dotenv==1.0.1

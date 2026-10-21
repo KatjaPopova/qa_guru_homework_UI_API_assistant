@@ -4,7 +4,7 @@ import pytest
 from pages.travel_assistant_page import TravelAssistantPage
 
 
-@allure.epic("Travel Assistant UI")
+@allure.epic("Travel Assistant ui")
 @allure.feature("Chat actions")
 @allure.tag("ui")
 @allure.tag("chat")

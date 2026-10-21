@@ -1,5 +1,8 @@
 import os
 from urllib.parse import quote
+import httpx
+
+from config import Settings, get_settings
 
 import pytest
 from dotenv import load_dotenv
@@ -169,3 +172,23 @@ def main_page(driver, request):
 def travel_assistant_widget(main_page):
     main_page.open_cap_chat()
     return TravelAssistantPage(main_page.driver)
+
+
+@pytest.fixture(scope="session")
+def settings() -> Settings:
+    return get_settings()
+
+
+@pytest.fixture(scope="session")
+def client(settings: Settings) -> httpx.Client:
+    with httpx.Client(
+        base_url=settings.test_host,
+        timeout=httpx.Timeout(60.0, connect=20.0),
+        follow_redirects=True,
+    ) as http_client:
+        yield http_client
+
+
+@pytest.fixture(scope="session")
+def chat_headers(settings: Settings) -> dict[str, str]:
+    return settings.base_headers.copy()
