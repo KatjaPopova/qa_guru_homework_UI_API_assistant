@@ -1,14 +1,13 @@
 import os
 from urllib.parse import quote
+
 import httpx
-
-from config import Settings, get_settings
-
 import pytest
 from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 
+from config import Settings, get_settings
 from pages.main_page import MainPage
 from pages.travel_assistant_page import TravelAssistantPage
 from utils import attach
@@ -161,10 +160,9 @@ def driver(request):
 
 
 @pytest.fixture
-def main_page(driver, request):
-    base_url = request.config.getoption("--base-url")
+def main_page(driver):
     page = MainPage(driver)
-    page.open(base_url)
+    page.open()
     return page
 
 
@@ -182,9 +180,10 @@ def settings() -> Settings:
 @pytest.fixture(scope="session")
 def client(settings: Settings) -> httpx.Client:
     with httpx.Client(
-        base_url=settings.test_host,
-        timeout=httpx.Timeout(60.0, connect=20.0),
-        follow_redirects=True,
+            base_url=settings.test_host,
+            timeout=httpx.Timeout(60.0, connect=20.0),
+            follow_redirects=True,
+            verify=False,
     ) as http_client:
         yield http_client
 

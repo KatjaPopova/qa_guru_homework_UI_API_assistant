@@ -1,7 +1,5 @@
 import allure
 
-from pages.travel_assistant_page import TravelAssistantPage
-
 
 @allure.epic("Travel Assistant ui")
 @allure.feature("Chat opening")
@@ -50,15 +48,6 @@ class TestChatOpening:
     @allure.severity(allure.severity_level.NORMAL)
     @allure.tag("smoke")
     def test_6_quick_prompts_visible(self, travel_assistant_widget):
-        travel_assistant_widget.should_see_quick_prompt(
-            TravelAssistantPage.QUICK_PROMPT_SOCHI,
-            "Хочу маршрут в Сочи на 3 дня"
-        )
-        travel_assistant_widget.should_see_quick_prompt(
-            TravelAssistantPage.QUICK_PROMPT_KAZAN,
-            "Что делать в Казани на выходных?"
-        )
-        travel_assistant_widget.should_see_quick_prompt(
-            TravelAssistantPage.QUICK_PROMPT_ORDER,
-            "Нужна помощь с заказом"
-        )
+        travel_assistant_widget.should_see_quick_prompt("Хочу маршрут в Сочи на 3 дня")
+        travel_assistant_widget.should_see_quick_prompt("Что делать в Казани на выходных?")
+        travel_assistant_widget.should_see_quick_prompt("Нужна помощь с заказом")

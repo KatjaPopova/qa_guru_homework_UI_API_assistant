@@ -1,8 +1,6 @@
 import allure
 import pytest
 
-from pages.travel_assistant_page import TravelAssistantPage
-
 
 @allure.epic("Travel Assistant ui")
 @allure.feature("Chat actions")
@@ -41,22 +39,21 @@ class TestChatActions:
     @allure.severity(allure.severity_level.NORMAL)
     @allure.tag("positive")
     @pytest.mark.parametrize(
-        "prompt_locator,prompt_text,expected_reply_part",
+        "prompt_text,expected_reply_part",
         [
-            (TravelAssistantPage.QUICK_PROMPT_SOCHI, "Хочу маршрут в Сочи на 3 дня", "Сочи"),
-            (TravelAssistantPage.QUICK_PROMPT_KAZAN, "Что делать в Казани на выходных?", "Казань"),
-            (TravelAssistantPage.QUICK_PROMPT_ORDER, "Нужна помощь с заказом", "заказ"),
+            ("Хочу маршрут в Сочи на 3 дня", ["Сочи"]),
+            ("Что делать в Казани на выходных?", ["Казань"]),
+            ("Нужна помощь с заказом", ["заказ"]),
         ]
     )
     def test_quick_prompts_return_answers(
             self,
             travel_assistant_widget,
-            prompt_locator,
             prompt_text,
             expected_reply_part
     ):
-        travel_assistant_widget.should_see_quick_prompt(prompt_locator, prompt_text)
-        travel_assistant_widget.click_quick_prompt(prompt_locator, prompt_text)
+        travel_assistant_widget.should_see_quick_prompt(prompt_text)
+        travel_assistant_widget.click_quick_prompt(prompt_text)
         travel_assistant_widget.should_have_sent_message(prompt_text)
         travel_assistant_widget.should_have_reply_containing_any(expected_reply_part)
 

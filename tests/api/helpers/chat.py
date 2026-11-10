@@ -74,3 +74,23 @@ def send_chat_request(
     stream_events = parse_jsonl_response(response, expected_status=200)
     chat_hash = response.headers.get("x-chat-hash")
     return stream_events, chat_hash
+
+def send_chat_follow_up_request(
+    client: httpx.Client,
+    chat_headers: dict[str, str],
+    chat_hash: str,
+    query: str,
+) -> list[dict[str, Any]]:
+    payload = {
+        "role": "user",
+        "content": query,
+        "dateCreated": dt.datetime.utcnow().isoformat(),
+    }
+
+    response = client.post(
+        f"{CHAT_ENDPOINT}{chat_hash}/messages/",
+        headers={**chat_headers, "x-chat-hash": chat_hash},
+        json=payload,
+    )
+
+    return parse_jsonl_response(response, expected_status=200)

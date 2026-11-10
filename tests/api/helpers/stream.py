@@ -73,3 +73,10 @@ def stream_has_support_intent(stream_events: list[dict[str, Any]]) -> bool:
         event.get("t") == "i" and event.get("c") == "Support"
         for event in stream_events
     )
+
+def stream_has_token(stream_events: list[dict[str, Any]], token_type: str) -> bool:
+    return any(event.get("t") == token_type for event in stream_events)
+
+
+def stream_has_status_event(stream_events: list[dict[str, Any]]) -> bool:
+    return any(event.get("t") == "status" for event in stream_events)

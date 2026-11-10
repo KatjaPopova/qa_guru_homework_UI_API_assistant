@@ -17,9 +17,9 @@ class MainPage:
     def __init__(self, driver):
         self.driver = driver
 
-    def open(self, base_url):
+    def open(self):
         with allure.step("Открыть главную страницу tutu.ru"):
-            self.driver.get(base_url)
+            self.driver.get(self.driver.base_url)
         return self
 
     def open_cap_chat(self):

@@ -1,9 +1,11 @@
 import allure
-from selenium.common.exceptions import StaleElementReferenceException
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+
+from utils.driver_helper import DriverHelper
 
 
 class TravelAssistantPage:
@@ -12,10 +14,6 @@ class TravelAssistantPage:
         By.XPATH,
         "//h2[normalize-space()='Привет, я Кэп!']"
     )
-
-    QUICK_PROMPT_SOCHI = (By.XPATH, "//button[contains(., 'Хочу маршрут в Сочи на 3 дня')]")
-    QUICK_PROMPT_KAZAN = (By.XPATH, "//button[contains(., 'Что делать в Казани на выходных?')]")
-    QUICK_PROMPT_ORDER = (By.XPATH, "//button[contains(., 'Нужна помощь с заказом')]")
 
     MESSAGE_INPUT = (By.CSS_SELECTOR, "textarea[placeholder='Напишите запрос']")
     MESSAGE_TEXTS = (By.CSS_SELECTOR, "p[data-ti='p']")
@@ -30,8 +28,8 @@ class TravelAssistantPage:
     FILE_INPUT = (By.CSS_SELECTOR, "input[type='file']")
 
     CLOSE_BUTTON = (
-        By.XPATH,
-        "//div[contains(@class, 'KXME1Y3ZMqk4CvUJ')]//button[.//i[contains(@class, 'oim-cross_outline')]]"
+        By.CSS_SELECTOR,
+        "button[data-ti='close-button']"
     )
 
     FILE_UPLOAD_ERROR = (
@@ -44,46 +42,39 @@ class TravelAssistantPage:
     def __init__(self, driver):
         self.driver = driver
         self.wait = WebDriverWait(self.driver, 20)
+        self.helper = DriverHelper(driver, timeout=20)
 
     def open(self, url):
         with allure.step(f"Открыть страницу: {url}"):
-            self.driver.get(url)
+            self.helper.open(url)
         return self
 
     def _switch_to_iframe(self):
-        iframe = self.wait.until(EC.presence_of_element_located(self.IFRAME))
-        self.driver.switch_to.frame(iframe)
+        self.helper.switch_to_frame(self.IFRAME)
 
     def _switch_to_default_content(self):
-        self.driver.switch_to.default_content()
+        self.helper.switch_to_default_content()
 
     def _wait_visible(self, locator):
-        return self.wait.until(EC.visibility_of_element_located(locator))
+        return self.helper.wait_visible(locator)
 
     def _wait_clickable(self, locator):
-        return self.wait.until(EC.element_to_be_clickable(locator))
+        return self.helper.wait_clickable(locator)
+
+    def _wait_presence(self, locator):
+        return self.helper.wait_presence(locator)
 
     def _wait_message_contains(self, text: str):
-        def _predicate(driver):
-            try:
-                elements = driver.find_elements(*self.MESSAGE_TEXTS)
-                texts = [el.text.strip() for el in elements]
-                return any(text in message for message in texts)
-            except StaleElementReferenceException:
-                return False
-
-        return self.wait.until(_predicate)
+        return self.helper.wait_message_contains(self.MESSAGE_TEXTS, text)
 
     def _wait_message_equals(self, text: str):
-        def _predicate(driver):
-            try:
-                elements = driver.find_elements(*self.MESSAGE_TEXTS)
-                texts = [el.text.strip() for el in elements]
-                return any(message == text for message in texts)
-            except StaleElementReferenceException:
-                return False
+        return self.helper.wait_message_equals(self.MESSAGE_TEXTS, text)
 
-        return self.wait.until(_predicate)
+    @staticmethod
+    def _quick_prompt_locator(prompt_text: str):
+        normalized_prompt = " ".join(prompt_text.split())
+        significant_part = normalized_prompt.rstrip("?").split(",")[0]
+        return By.XPATH, f'//button[contains(normalize-space(.), "{significant_part}")]'
 
     # -------------------------
     # CHECKS
@@ -103,11 +94,11 @@ class TravelAssistantPage:
             self._switch_to_default_content()
         return self
 
-    def should_see_quick_prompt(self, prompt_locator, prompt_name: str):
+    def should_see_quick_prompt(self, prompt_text: str):
         self._switch_to_iframe()
         try:
-            with allure.step(f"Проверить подсказку: {prompt_name}"):
-                self._wait_visible(prompt_locator)
+            with allure.step(f"Проверить подсказку: {prompt_text}"):
+                self._wait_visible(self._quick_prompt_locator(prompt_text))
         finally:
             self._switch_to_default_content()
         return self
@@ -134,7 +125,7 @@ class TravelAssistantPage:
         self._switch_to_iframe()
         try:
             with allure.step("Проверить кнопку закрытия чата"):
-                self._wait_visible(self.CLOSE_BUTTON)
+                self._wait_presence(self.CLOSE_BUTTON)
         finally:
             self._switch_to_default_content()
         return self
@@ -259,16 +250,26 @@ class TravelAssistantPage:
         self._switch_to_iframe()
         try:
             with allure.step("Проверить реакцию чата после загрузки файла"):
-                self._wait_message_contains("Напишите ваш вопрос, пожалуйста.")
+                wait = WebDriverWait(self.driver, 20)
+
+                try:
+                    error_text = wait.until(lambda driver: driver.find_element(*self.FILE_UPLOAD_ERROR).text.strip())
+                    raise AssertionError(
+                        f'После загрузки файла появилось сообщение об ошибке: "{error_text}"'
+                    )
+                except TimeoutException:
+                    pass
+
+                self._wait_visible(self.MESSAGE_INPUT)
         finally:
             self._switch_to_default_content()
         return self
 
-    def click_quick_prompt(self, prompt_locator, prompt_name: str):
+    def click_quick_prompt(self, prompt_text: str):
         self._switch_to_iframe()
         try:
-            with allure.step(f"Нажать подсказку: {prompt_name}"):
-                button = self._wait_visible(prompt_locator)
+            with allure.step(f"Нажать подсказку: {prompt_text}"):
+                button = self._wait_visible(self._quick_prompt_locator(prompt_text))
                 button.click()
         finally:
             self._switch_to_default_content()
